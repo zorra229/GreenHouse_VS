@@ -6,7 +6,7 @@
 
 SensorData Sensor;
 JsonRasberry JR;//инициализация класса для считывания JSON от Rasberry
-String StrJson = "";
+
 boolean stringComplete = false;
 //SensorData SensorDat;
 void setup(void)
@@ -25,6 +25,10 @@ void setup(void)
 void function()
 {
 	Sensor.calc();
+	if (JR.success)
+	{
+		JR.calc(Sensor);
+	}
 }
 
 void serialEvent()
@@ -33,7 +37,7 @@ void serialEvent()
 	while (Serial.available())
 	{
 		char inChar = (char)Serial.read();
-		StrJson += inChar;
+		JR.StrJson += inChar;
 		if (inChar == '\n')
 		{
 			stringComplete = true;
@@ -44,11 +48,11 @@ void serialEvent()
 }
 void inputJson()
 {
-	Serial.println(StrJson);
-	Serial.println(StrJson.length());
+	Serial.println(JR.StrJson);
+	Serial.println(JR.StrJson.length());
 
 	DynamicJsonBuffer jsonBuffer;
-	JsonObject& root = jsonBuffer.parseObject(StrJson);
+	JsonObject& root = jsonBuffer.parseObject(JR.StrJson);
 	if (!root.success()) {
 		Serial.println("parseObject() failed");
 	}
@@ -58,7 +62,6 @@ void inputJson()
 		JR.AddData((int)root["SoilMoistureLimits"][0], (int)root["SoilMoistureLimits"][1], (bool)root["Light"],
 			(int)root["AirTemperatureLimits"][0], (int)root["AirTemperatureLimits"][1],
 			(int)root["SoilTemperatureLimits"][0], (int)root["SoilTemperatureLimits"][1]);
-		JR.calc(Sensor);
 	}
 }
 void loop(void) {
@@ -67,8 +70,7 @@ void loop(void) {
 	//  digitalWrite(pin, value)
 	if (stringComplete) {
 		inputJson();// обработка принимаемого json, там же вызов необходмых функций.
-					// очищаем строку:
-		StrJson = "";
+		JR.StrJson = "";// очищаем строку:
 		stringComplete = false;
 	}
 }

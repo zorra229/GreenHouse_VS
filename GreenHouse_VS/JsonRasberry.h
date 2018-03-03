@@ -13,9 +13,11 @@
 class JsonRasberry
 {
 public:
+	String StrJson;
 	JsonRasberry();
-	void calc(const SensorData &Sensor);
+	void calc(SensorData &Sensor);
 	void AddData(int, int, bool, int, int, int, int);
+	bool success;
 private:
 	int SoilMoistureMin;
 	int SoilMoistureMax;
