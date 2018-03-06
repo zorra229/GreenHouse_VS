@@ -1,5 +1,5 @@
 // JsonRasberry.h
-
+#pragma once;
 #ifndef _JSONRASBERRY_h
 #define _JSONRASBERRY_h
 
@@ -8,7 +8,7 @@
 #else
 	#include "WProgram.h"
 #endif
-
+#include <MsTimer2.h>
 #include "SensorData.h"
 class JsonRasberry
 {

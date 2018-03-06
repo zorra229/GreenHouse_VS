@@ -8,6 +8,8 @@ SensorData Sensor;
 JsonRasberry JR;//инициализация класса для считывания JSON от Rasberry
 
 boolean stringComplete = false;
+
+bool tmp;
 //SensorData SensorDat;
 void setup(void)
 {
@@ -33,16 +35,22 @@ void function()
 
 void serialEvent()
 {
-	MsTimer2::stop();
 	while (Serial.available())
 	{
+		MsTimer2::stop();
 		char inChar = (char)Serial.read();
 		JR.StrJson += inChar;
-		if (inChar == '\n')
+		if ((inChar == '\'') && (tmp == 1))
 		{
+			tmp = 0;
+			Serial.println(JR.StrJson);
 			stringComplete = true;
 			MsTimer2::start();
-			return;
+			// return;
+		}
+		else if (inChar == '\'')
+		{
+			tmp = 1;
 		}
 	}
 }

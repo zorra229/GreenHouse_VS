@@ -15,8 +15,12 @@ OneWire ds(13);  //GroundTemperatureSensors на 12-ом пине
 
 SensorData::SensorData()
 {
-
+	Watering = 0;
+	Light = 0;
+	Heating = 0;
+	Blowing = 0;
 }
+
 
 void SensorData::calc()
 {
@@ -35,26 +39,14 @@ void SensorData::calc()
 		DataGroundTemperatureSensor.add(DataGroundTemperatureSensors[2]);
 	}
 
-	bool status;
-	status = bme.begin(0x76);
-	if (!status) {
-		Serial.println("Could not find a valid BME280 sensor, check wiring!");
-	}
-	else
+	if (BmeCalc(BmeData))
 	{
-		//root["BME280"] = "";
-		//JsonArray& DataBME280 = root.createNestedArray("DataBME280");
-		//DataBME280.add(bme.readTemperature());
-		//D1ataBME280.add(bme.readPressure() / 100.0F);
-		//DataBME280.add(bme.readHumidity());
-		BmeTemperature = bme.readTemperature();
-		BmeHumidity = bme.readHumidity();
-		BmePressure = bme.readPressure() / 100.0F;
-		root["DataBME280Temp"] = BmeTemperature;
-		root["DataBME280Humidity"] = BmeHumidity;
-		root["DataBME280Pressure"] = BmePressure;
-
+		root["DataBME280Temp"] = BmeData[0];
+		root["DataBME280Humidity"] = BmeData[1];
+		root["DataBME280Pressure"] = BmeData[2];
 	}
+
+	
 
 	//root["GroundGygrometer1"] = "";
 	JsonArray& DataGroundGygrometers = root.createNestedArray("DataGroundGygrometers");
@@ -73,16 +65,49 @@ void SensorData::calc()
 	DataGroundGygrometer[3] = analogRead(A3);
 	DataGroundGygrometers.add(DataGroundGygrometer[3]);
 
-	root["Watering"] = 0;
-	root["Light"] = 0;
-	root["Heating"] = 0;
-	root["Blowing"] = 0;
+	root["Watering"] = Watering;
+	root["Light"] = Light;
+	root["Heating"] = Heating;
+	root["Blowing"] = Blowing;
 	//root.printTo(Serial);
 	//Serial.println();
 	root.prettyPrintTo(Serial);
 	Serial.println();
 }
+bool SensorData::GroundTemperatureSensors(double *DataGroundTemperatureSensors)
+{
+	byte i = 0;
+	byte addr[8];
 
+	ds.reset_search(); //Ќачинает новый поиск. —ледующее использование поиска начнетс€ на первом устройстве.
+	if (ds.search(addr) == false)
+	{
+		Serial.println("Can't find GroundTemperatureSensors pls chekc it and reload");
+		return 0;
+		//break;
+	}
+	else
+	{
+		ds.reset();
+		ds.write(0xCC);           // команда 0xCC - отправка команды всем ведомым устройствам
+		ds.write(0x44, 1);         // запускаем конверсию и включаем паразитное питание
+		delay(1000);     // 750 миллисекунд может хватить, а может и нет
+		do
+		{
+			//проверка на целостности данных
+			if (OneWire::crc8(addr, 7) != addr[7]) {
+				Serial.print("CRC is not valid!\n");  //  "CRC не корректен!\n")
+				return 0;
+			}
+			//Serial.print("number of devices = ");
+			//Serial.println(i);
+			DataGroundTemperatureSensors[i] = temp(addr);
+			i++;
+		} while (ds.search(addr));
+
+		return 1;
+	}
+}
 double SensorData::temp(byte addr[8])
 {
 	byte data[12];
@@ -118,39 +143,28 @@ double SensorData::temp(byte addr[8])
 	return temperature;
 }
 
-bool SensorData::GroundTemperatureSensors(double *DataGroundTemperatureSensors)
+bool SensorData::BmeCalc(double *BmeData)
 {
-	byte i = 0;
-	byte addr[8];
-
-	ds.reset_search(); //Ќачинает новый поиск. —ледующее использование поиска начнетс€ на первом устройстве.
-	if (ds.search(addr) == false)
-	{
-		Serial.println("Can't find GroundTemperatureSensors pls chekc it and reload");
+	bool status;
+	status = bme.begin(0x76);
+	if (!status) {
+		Serial.println("Could not find a valid BME280 sensor, check wiring!");
 		return 0;
-		//break;
 	}
 	else
 	{
-		ds.reset();
-		ds.write(0xCC);           // команда 0xCC - отправка команды всем ведомым устройствам
-		ds.write(0x44, 1);         // запускаем конверсию и включаем паразитное питание
-		delay(1000);     // 750 миллисекунд может хватить, а может и нет
-		do
-		{
-			//проверка на целостности данных
-			if (OneWire::crc8(addr, 7) != addr[7]) {
-				Serial.print("CRC is not valid!\n");  //  "CRC не корректен!\n")
-				return 0;
-			}
-			//Serial.print("number of devices = ");
-			//Serial.println(i);
-			DataGroundTemperatureSensors[i] = temp(addr);
-			i++;
-		} while (ds.search(addr));
 
+		//root["BME280"] = "";
+		//JsonArray& DataBME280 = root.createNestedArray("DataBME280");
+		//DataBME280.add(bme.readTemperature());
+		//D1ataBME280.add(bme.readPressure() / 100.0F);
+		//DataBME280.add(bme.readHumidity());
+		this->BmeData[0] = bme.readTemperature();
+		this->BmeData[1] = bme.readHumidity();
+		this->BmeData[2] = bme.readPressure() / 100.0F;
 		return 1;
 	}
 }
+
 
 
